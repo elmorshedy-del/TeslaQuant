@@ -1,0 +1,26 @@
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    user: "10001:10001"
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      LAB_DOMAIN: ${LAB_DOMAIN:?Set LAB_DOMAIN before enabling public access}
+      LAB_USERNAME: ${LAB_USERNAME:-ahmed}
+      LAB_PASSWORD_HASH: ${LAB_PASSWORD_HASH:?Set a bcrypt password hash before enabling public access}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      app:
+        condition: service_healthy
+    mem_limit: 256m
+    cpus: 0.5

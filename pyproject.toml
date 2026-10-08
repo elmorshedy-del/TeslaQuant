@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tesla-research-lab"
+version = "0.1.0"
+description = "Versioned Tesla episode research infrastructure"
+requires-python = ">=3.12"
+dependencies = ["pandas>=2.2,<4", "pyarrow>=19,<25", "duckdb>=1.2,<2", "streamlit>=1.45,<2", "scikit-learn>=1.5,<2", "exchange-calendars>=4.8,<5", "requests>=2.32,<3", "boto3>=1.35,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+
+[project.scripts]
+tesla-lab = "tesla_lab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

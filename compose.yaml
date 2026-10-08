@@ -1,0 +1,75 @@
+name: tesla-lab
+
+x-research: &research
+  image: tesla-research-lab:0.1.0
+  build: .
+  user: "10001:10001"
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp:size=256m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  volumes:
+    - research-data:/data
+  depends_on:
+    init:
+      condition: service_completed_successfully
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  init:
+    image: busybox:1.37.0
+    user: "0:0"
+    network_mode: none
+    command: ["sh", "-c", "chown 10001:10001 /data /caddy-data /caddy-config && chmod 700 /data /caddy-data /caddy-config"]
+    volumes:
+      - research-data:/data
+      - caddy-data:/caddy-data
+      - caddy-config:/caddy-config
+    restart: "no"
+  app:
+    <<: *research
+    ports: ["127.0.0.1:8501:8501"]
+    environment:
+      TESLA_DATA_DIR: /data
+    mem_limit: 1g
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  worker:
+    <<: *research
+    command: ["tesla-lab", "worker"]
+    environment:
+      TESLA_DATA_DIR: /data
+      ALPACA_API_KEY: ${ALPACA_API_KEY:-}
+      ALPACA_API_SECRET: ${ALPACA_API_SECRET:-}
+      OMP_NUM_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+    mem_limit: 4g
+    cpus: 2.0
+  backup:
+    <<: *research
+    command: ["tesla-lab", "backup-loop"]
+    environment:
+      TESLA_DATA_DIR: /data
+      SPACES_ENDPOINT: ${SPACES_ENDPOINT:-}
+      SPACES_REGION: ${SPACES_REGION:-nyc3}
+      SPACES_BUCKET: ${SPACES_BUCKET:-}
+      SPACES_ACCESS_KEY: ${SPACES_ACCESS_KEY:-}
+      SPACES_SECRET_KEY: ${SPACES_SECRET_KEY:-}
+    mem_limit: 512m
+    cpus: 0.5
+
+volumes:
+  research-data:
+  caddy-data:
+  caddy-config:

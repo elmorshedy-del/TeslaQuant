@@ -3,6 +3,8 @@ __pycache__/
 .pytest_cache/
 .env
 var/
-bootstrap/
+bootstrap/*
+!bootstrap/seed.enc
+!bootstrap/seed.hmac
 *.egg-info/
 .superpowers/

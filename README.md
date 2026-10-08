@@ -33,7 +33,7 @@ In another terminal:
 
 Open `http://localhost:8501`. Both processes must use the same `TESLA_DATA_DIR`, which defaults to `var`. Datasets and jobs persist there. Closing the browser does not stop queued work.
 
-Import a private audit archive using the application or `tesla-lab import-audit /path/to/audit.zip`. The review document format is in `docs/review-format.md`. Dataset files and restored server state must be transferred privately, never committed to this repository.
+Import a private audit archive using the application or `tesla-lab import-audit /path/to/audit.zip`. The review document format is in `docs/review-format.md`. Plaintext datasets and restored server state must never be committed to this repository.
 
 ## Tests
 
@@ -47,4 +47,10 @@ The existing deployment uses Docker Compose with separate app, worker and backup
 
 Copy `.env.example` to `.env`, restrict its permissions, and supply the hostname, username and a Caddy-generated password hash before `bash deploy/setup.sh public`. The local mode is `bash deploy/setup.sh local`. Provider and storage credentials belong only in the appropriate server service environment.
 
-This repository does not by itself provision a Railway deployment, copy the existing server's datasets or enable live forecasts. Railway deployment settings and persistent storage must be configured before using it there.
+## Railway copy
+
+`Dockerfile.railway` runs Caddy, Streamlit, the persistent worker, and the local backup loop in one service so they can share an attached `/data` volume. Set the Dockerfile path to `Dockerfile.railway`, attach a volume at `/data`, set `PORT=8080`, `LAB_USERNAME` and `LAB_PASSWORD`, and set `TESLA_BOOTSTRAP_KEY` for the initial restore. Point the Railway domain to port 8080 and use `/healthz` as the health check. The server starts only when password protection is configured. The application itself only listens on the container loopback interface.
+
+`bootstrap/seed.enc` is an encrypted snapshot of the original research state, with an HMAC in `seed.hmac`. The decryption key lives only in the Railway service variables. The first boot verifies and restores the snapshot into `/data/state`; later deploys preserve the volume without restoring over it. The repository does not contain plaintext research datasets or the key. The snapshot is a point-in-time copy, not a live synchronization with the DigitalOcean server. Configure off-volume backups separately before relying on Railway as the sole copy.
+
+This deployment provides the interface and worker, but the experiment still needs complete price-only episode reviews. Live forecasts remain blocked until a prospectively eligible model is approved.

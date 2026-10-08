@@ -1,0 +1,18 @@
+FROM caddy:2.10.2-alpine AS caddy
+FROM python:3.12.14-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 TESLA_DATA_DIR=/data/state
+WORKDIR /app
+RUN groupadd -g 10001 research && useradd -u 10001 -g research -m research \
+    && apt-get update && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
+COPY requirements.lock pyproject.toml ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+COPY src ./src
+RUN pip install --no-cache-dir --no-deps .
+COPY app.py ./
+COPY .streamlit ./.streamlit
+COPY deploy/Caddyfile.railway deploy/railway_start.py ./deploy/
+COPY bootstrap/seed.enc bootstrap/seed.hmac ./bootstrap/
+EXPOSE 8080
+CMD ["python", "deploy/railway_start.py"]

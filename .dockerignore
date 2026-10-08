@@ -4,6 +4,8 @@
 var
 tests
 docs
-bootstrap
+bootstrap/*
+!bootstrap/seed.enc
+!bootstrap/seed.hmac
 __pycache__
 .pytest_cache

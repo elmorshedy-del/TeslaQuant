@@ -1,0 +1,17 @@
+:{$PORT} {
+    encode zstd gzip
+    handle /healthz {
+        respond "ok" 200
+    }
+    handle {
+        basic_auth {
+            {$LAB_USERNAME} {$LAB_PASSWORD_HASH}
+        }
+        reverse_proxy 127.0.0.1:8501
+        header {
+            X-Content-Type-Options nosniff
+            Referrer-Policy no-referrer
+            X-Frame-Options DENY
+        }
+    }
+}
